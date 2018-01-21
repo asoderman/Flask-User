@@ -3,6 +3,7 @@
     :copyright: (c) 2013 by Ling Thio
     :author: Ling Thio (ling.thio@gmail.com)
     :license: Simplified BSD License, see LICENSE.txt for more details."""
+from re import compile
 
 import string
 from flask import current_app
@@ -21,35 +22,25 @@ from .translations import lazy_gettext as _
 # **************************
 # ** Validation Functions **
 # **************************
+PASSWORD_REGEX = compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[\w\W]{6,}$')
+USERNAME_REGEX = compile(r'^[A-z0-9\-\.\_]{3,}$')
 
 def password_validator(form, field):
     """ Password must have one lowercase letter, one uppercase letter and one digit. """
-    # Convert string to list of characters
-    password = list(field.data)
-    password_length = len(password)
-
-    # Count lowercase, uppercase and numbers
-    lowers = uppers = digits = 0
-    for ch in password:
-        if ch.islower(): lowers+=1
-        if ch.isupper(): uppers+=1
-        if ch.isdigit(): digits+=1
-
-    # Password must have one lowercase letter, one uppercase letter and one digit
-    is_valid = password_length>=6 and lowers and uppers and digits
-    if not is_valid:
-        raise ValidationError(_('Password must have at least 6 characters with one lowercase letter, one uppercase letter and one number'))
+    password = field.data
+    if PASSWORD_REGEX.match(password) is None:
+        raise ValidationError(_('Password must have at least 6 characters with'
+                                ' one lowercase letter, one uppercase letter '
+                                'and one number'))
 
 def username_validator(form, field):
-    """ Username must cont at least 3 alphanumeric characters long"""
+    """ Username must be at least 3 alphanumeric characters long"""
     username = field.data
     if len(username) < 3:
         raise ValidationError(_('Username must be at least 3 characters long'))
-    valid_chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._'
-    chars = list(username)
-    for char in chars:
-        if char not in valid_chars:
-            raise ValidationError(_("Username may only contain letters, numbers, '-', '.' and '_'"))
+    if USERNAME_REGEX.match(username) is None:
+        raise ValidationError(_("Username may only contain letters, numbers, "
+                                "'-', '.' and '_'"))
 
 def unique_username_validator(form, field):
     """ Username must be unique"""
